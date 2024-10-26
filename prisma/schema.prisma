@@ -8,18 +8,23 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Usuario {
-  id         String    @id @default(uuid())
-  nombre     String
-  apellido   String
-  telefono   String
-  email      String    @unique
-  google_id  String?   @unique
-  created_at DateTime? @default(now())
-  TipoUsuario UsuarioTipoUsuario[]
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  image         String?
+  emailVerified DateTime?
+
+  accounts      Account[]
+  sessions      Session[]
+  TipoUsuario   UsuarioTipoUsuario[]
   TrabajadorServicio TrabajadorServicio[]
-  Reservas   Reserva[]
+  Reservas      Reserva[]
+  Post          Post[]
 }
+
+
+
 
 model TipoUsuario {
   id      Int               @id @default(autoincrement())
@@ -29,7 +34,7 @@ model TipoUsuario {
 
 model UsuarioTipoUsuario {
   id            Int          @id @default(autoincrement())
-  usuario       Usuario?     @relation(fields: [usuario_id], references: [id])
+  usuario       User?     @relation(fields: [usuario_id], references: [id])
   usuario_id    String?
   tipo_usuario  TipoUsuario? @relation(fields: [tipo_usuario_id], references: [id])
   tipo_usuario_id Int?
@@ -61,7 +66,7 @@ model LocalServicio {
 
 model TrabajadorServicio {
   id          Int               @id @default(autoincrement())
-  usuario     Usuario?          @relation(fields: [usuario_id], references: [id])
+  usuario     User?          @relation(fields: [usuario_id], references: [id])
   usuario_id  String?
   servicio    Servicio?         @relation(fields: [servicio_id], references: [id])
   servicio_id Int?
@@ -89,7 +94,7 @@ model HorarioDisponible {
 
 model Reserva {
   id                    Int               @id @default(autoincrement())
-  cliente               Usuario?          @relation(fields: [cliente_id], references: [id])
+  cliente               User?          @relation(fields: [cliente_id], references: [id])
   cliente_id            String?
   horario_disponible    HorarioDisponible? @relation(fields: [horario_disponible_id], references: [id])
   horario_disponible_id Int?
@@ -97,3 +102,49 @@ model Reserva {
   estado                String?
   created_at            DateTime? @default(now())
 }
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  provider           String
+  providerAccountId  String
+  type               String 
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  createdBy User     @relation(fields: [createdById], references: [id])
+  createdById String
+}
+
