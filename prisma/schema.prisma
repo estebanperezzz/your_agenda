@@ -1,74 +1,99 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
+model Usuario {
+  id         String    @id @default(uuid())
+  nombre     String
+  apellido   String
+  telefono   String
+  email      String    @unique
+  google_id  String?   @unique
+  created_at DateTime? @default(now())
+  TipoUsuario UsuarioTipoUsuario[]
+  TrabajadorServicio TrabajadorServicio[]
+  Reservas   Reserva[]
 }
 
-// Necessary for Next auth
-model Account {
-    id                       String  @id @default(cuid())
-    userId                   String
-    type                     String
-    provider                 String
-    providerAccountId        String
-    refresh_token            String? // @db.Text
-    access_token             String? // @db.Text
-    expires_at               Int?
-    token_type               String?
-    scope                    String?
-    id_token                 String? // @db.Text
-    session_state            String?
-    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    refresh_token_expires_in Int?
-
-    @@unique([provider, providerAccountId])
+model TipoUsuario {
+  id      Int               @id @default(autoincrement())
+  nombre  String
+  UsuarioTipoUsuario UsuarioTipoUsuario[]
 }
 
-model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model UsuarioTipoUsuario {
+  id            Int          @id @default(autoincrement())
+  usuario       Usuario?     @relation(fields: [usuario_id], references: [id])
+  usuario_id    String?
+  tipo_usuario  TipoUsuario? @relation(fields: [tipo_usuario_id], references: [id])
+  tipo_usuario_id Int?
 }
 
-model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
-    posts         Post[]
+model Local {
+  id          Int               @id @default(autoincrement())
+  nombre      String
+  telefono    String?
+  direccion   String?
+  LocalServicio LocalServicio[]
+  TrabajadorLocalServicio TrabajadorLocalServicio[]
 }
 
-model VerificationToken {
-    identifier String
-    token      String   @unique
-    expires    DateTime
+model Servicio {
+  id          Int               @id @default(autoincrement())
+  nombre      String
+  TrabajadorServicio TrabajadorServicio[]
+  LocalServicio LocalServicio[]
+}
 
-    @@unique([identifier, token])
+model LocalServicio {
+  id          Int               @id @default(autoincrement())
+  local       Local?            @relation(fields: [local_id], references: [id])
+  local_id    Int?
+  servicio    Servicio?         @relation(fields: [servicio_id], references: [id])
+  servicio_id Int?
+}
+
+model TrabajadorServicio {
+  id          Int               @id @default(autoincrement())
+  usuario     Usuario?          @relation(fields: [usuario_id], references: [id])
+  usuario_id  String?
+  servicio    Servicio?         @relation(fields: [servicio_id], references: [id])
+  servicio_id Int?
+  TrabajadorLocalServicio TrabajadorLocalServicio[]
+}
+
+model TrabajadorLocalServicio {
+  id                      Int               @id @default(autoincrement())
+  trabajador_servicio     TrabajadorServicio? @relation(fields: [trabajador_servicio_id], references: [id])
+  trabajador_servicio_id  Int?
+  local                   Local?            @relation(fields: [local_id], references: [id])
+  local_id                Int?
+  HorariosDisponibles     HorarioDisponible[]
+}
+
+model HorarioDisponible {
+  id                         Int               @id @default(autoincrement())
+  trabajador_local_servicio  TrabajadorLocalServicio? @relation(fields: [trabajador_local_servicio_id], references: [id])
+  trabajador_local_servicio_id Int?
+  dia_semana                 String
+  hora_inicio                DateTime
+  hora_fin                   DateTime
+  Reservas                   Reserva[]
+}
+
+model Reserva {
+  id                    Int               @id @default(autoincrement())
+  cliente               Usuario?          @relation(fields: [cliente_id], references: [id])
+  cliente_id            String?
+  horario_disponible    HorarioDisponible? @relation(fields: [horario_disponible_id], references: [id])
+  horario_disponible_id Int?
+  fecha_reserva         DateTime
+  estado                String?
+  created_at            DateTime? @default(now())
 }
